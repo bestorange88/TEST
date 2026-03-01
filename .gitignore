@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+build/
+dist/
+*.spec
+!packaging/recovery_tron.spec
