@@ -127,7 +127,7 @@ class EnglishLyricsReader:
 
     def _build_text_area(self, parent: ttk.Frame):
         """Build the text input area with English and Chinese text boxes."""
-        text_frame = ttk.LabelFrame(parent, text="Lyrics Input", padding=5)
+        text_frame = ttk.LabelFrame(parent, text="歌词输入", padding=5)
         text_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 5))
 
         # Configure grid
@@ -136,7 +136,7 @@ class EnglishLyricsReader:
         text_frame.rowconfigure(1, weight=1)
 
         # English label and text
-        en_label = ttk.Label(text_frame, text="English Lyrics:")
+        en_label = ttk.Label(text_frame, text="英文歌词：")
         en_label.grid(row=0, column=0, sticky=tk.W, padx=(5, 2))
 
         en_text_frame = ttk.Frame(text_frame)
@@ -155,7 +155,7 @@ class EnglishLyricsReader:
         self.en_text.configure(yscrollcommand=en_scroll.set)
 
         # Chinese label and text
-        cn_label = ttk.Label(text_frame, text="Chinese Translation:")
+        cn_label = ttk.Label(text_frame, text="中文翻译：")
         cn_label.grid(row=0, column=1, sticky=tk.W, padx=(2, 5))
 
         cn_text_frame = ttk.Frame(text_frame)
@@ -181,7 +181,7 @@ class EnglishLyricsReader:
 
     def _build_settings_area(self, parent: ttk.Frame):
         """Build the parameter settings area."""
-        settings_frame = ttk.LabelFrame(parent, text="Settings", padding=5)
+        settings_frame = ttk.LabelFrame(parent, text="参数设置", padding=5)
         settings_frame.pack(fill=tk.X, pady=(0, 5))
 
         # Row 1: Voice, Speed
@@ -189,7 +189,7 @@ class EnglishLyricsReader:
         row1.pack(fill=tk.X, pady=2)
 
         # Voice selection
-        ttk.Label(row1, text="Voice:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row1, text="英文音色：").pack(side=tk.LEFT, padx=(5, 2))
         self.voice_var = tk.StringVar(value=DEFAULT_VOICE)
         self.voice_combo = ttk.Combobox(
             row1, textvariable=self.voice_var, state="readonly", width=30
@@ -197,7 +197,7 @@ class EnglishLyricsReader:
         self.voice_combo.pack(side=tk.LEFT, padx=(0, 15))
 
         # Speed
-        ttk.Label(row1, text="Speed:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row1, text="语速：").pack(side=tk.LEFT, padx=(5, 2))
         self.speed_var = tk.IntVar(value=0)
         self.speed_scale = ttk.Scale(
             row1, from_=-50, to=50, variable=self.speed_var,
@@ -210,7 +210,7 @@ class EnglishLyricsReader:
         self.speed_var.trace_add("write", self._update_speed_label)
 
         # Volume
-        ttk.Label(row1, text="Volume:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row1, text="音量：").pack(side=tk.LEFT, padx=(5, 2))
         self.volume_var = tk.IntVar(value=0)
         self.volume_scale = ttk.Scale(
             row1, from_=-50, to=50, variable=self.volume_var,
@@ -223,7 +223,7 @@ class EnglishLyricsReader:
         self.volume_var.trace_add("write", self._update_volume_label)
 
         # Pitch
-        ttk.Label(row1, text="Pitch:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row1, text="音高：").pack(side=tk.LEFT, padx=(5, 2))
         self.pitch_var = tk.IntVar(value=0)
         self.pitch_scale = ttk.Scale(
             row1, from_=-50, to=50, variable=self.pitch_var,
@@ -239,7 +239,7 @@ class EnglishLyricsReader:
         row2 = ttk.Frame(settings_frame)
         row2.pack(fill=tk.X, pady=2)
 
-        ttk.Label(row2, text="Reading Mode:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row2, text="朗读模式：").pack(side=tk.LEFT, padx=(5, 2))
         self.mode_var = tk.StringVar(value=MODE_ENGLISH_ONLY)
         mode_combo = ttk.Combobox(
             row2, textvariable=self.mode_var, values=READING_MODES,
@@ -247,7 +247,7 @@ class EnglishLyricsReader:
         )
         mode_combo.pack(side=tk.LEFT, padx=(0, 15))
 
-        ttk.Label(row2, text="Pause (ms):").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row2, text="停顿(毫秒)：").pack(side=tk.LEFT, padx=(5, 2))
         self.pause_var = tk.IntVar(value=DEFAULT_PAUSE_MS)
         pause_spin = ttk.Spinbox(
             row2, from_=0, to=5000, increment=100,
@@ -257,12 +257,12 @@ class EnglishLyricsReader:
 
         self.loop_var = tk.BooleanVar(value=False)
         loop_check = ttk.Checkbutton(
-            row2, text="Loop Current Line", variable=self.loop_var
+            row2, text="单句循环", variable=self.loop_var
         )
         loop_check.pack(side=tk.LEFT, padx=(5, 15))
 
         # Chinese voice (for bilingual mode)
-        ttk.Label(row2, text="Chinese Voice:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(row2, text="中文音色：").pack(side=tk.LEFT, padx=(5, 2))
         self.cn_voice_var = tk.StringVar(value="zh-CN-XiaoxiaoNeural")
         self.cn_voice_combo = ttk.Combobox(
             row2, textvariable=self.cn_voice_var, state="readonly", width=25
@@ -271,26 +271,26 @@ class EnglishLyricsReader:
 
     def _build_control_area(self, parent: ttk.Frame):
         """Build the control buttons area."""
-        control_frame = ttk.LabelFrame(parent, text="Controls", padding=5)
+        control_frame = ttk.LabelFrame(parent, text="控制按钮", padding=5)
         control_frame.pack(fill=tk.X, pady=(0, 5))
 
         # Row 1: File operations
         file_row = ttk.Frame(control_frame)
         file_row.pack(fill=tk.X, pady=2)
 
-        ttk.Button(file_row, text="Load Sample",
+        ttk.Button(file_row, text="加载示例",
                     command=self.load_sample, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
-        ttk.Button(file_row, text="Import TXT",
+        ttk.Button(file_row, text="导入TXT",
                     command=self.import_txt, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
-        ttk.Button(file_row, text="Save TXT",
+        ttk.Button(file_row, text="保存TXT",
                     command=self.save_txt, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
-        ttk.Button(file_row, text="Save JSON",
+        ttk.Button(file_row, text="保存JSON",
                     command=self.save_json, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
-        ttk.Button(file_row, text="Clear Text",
+        ttk.Button(file_row, text="清空文本",
                     command=self.clear_text, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
 
@@ -299,33 +299,33 @@ class EnglishLyricsReader:
         play_row.pack(fill=tk.X, pady=2)
 
         self.start_btn = ttk.Button(
-            play_row, text="Start Reading",
+            play_row, text="开始朗读",
             command=self.start_reading, style="Action.TButton"
         )
         self.start_btn.pack(side=tk.LEFT, padx=2)
 
         self.pause_btn = ttk.Button(
-            play_row, text="Pause",
+            play_row, text="暂停",
             command=self.pause_reading, style="Control.TButton",
             state=tk.DISABLED
         )
         self.pause_btn.pack(side=tk.LEFT, padx=2)
 
         self.resume_btn = ttk.Button(
-            play_row, text="Resume",
+            play_row, text="继续",
             command=self.resume_reading, style="Control.TButton",
             state=tk.DISABLED
         )
         self.resume_btn.pack(side=tk.LEFT, padx=2)
 
         self.stop_btn = ttk.Button(
-            play_row, text="Stop",
+            play_row, text="停止",
             command=self.stop_reading, style="Control.TButton",
             state=tk.DISABLED
         )
         self.stop_btn.pack(side=tk.LEFT, padx=2)
 
-        ttk.Button(play_row, text="Preview Current Line",
+        ttk.Button(play_row, text="试听当前行",
                     command=self.preview_current_line, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
 
@@ -333,7 +333,7 @@ class EnglishLyricsReader:
         export_row = ttk.Frame(control_frame)
         export_row.pack(fill=tk.X, pady=2)
 
-        ttk.Label(export_row, text="Export Mode:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(export_row, text="导出模式：").pack(side=tk.LEFT, padx=(5, 2))
         self.export_mode_var = tk.StringVar(value=EXPORT_ALL)
         export_combo = ttk.Combobox(
             export_row, textvariable=self.export_mode_var,
@@ -341,27 +341,27 @@ class EnglishLyricsReader:
         )
         export_combo.pack(side=tk.LEFT, padx=(0, 10))
 
-        ttk.Button(export_row, text="Export Audio",
+        ttk.Button(export_row, text="导出音频",
                     command=self.export_audio, style="Action.TButton"
                     ).pack(side=tk.LEFT, padx=2)
 
     def _build_status_area(self, parent: ttk.Frame):
         """Build the status display area."""
-        status_frame = ttk.LabelFrame(parent, text="Status", padding=5)
+        status_frame = ttk.LabelFrame(parent, text="状态显示", padding=5)
         status_frame.pack(fill=tk.X, pady=(0, 5))
 
         # Line info
         info_row = ttk.Frame(status_frame)
         info_row.pack(fill=tk.X, pady=2)
 
-        ttk.Label(info_row, text="Current Line:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(info_row, text="当前行：").pack(side=tk.LEFT, padx=(5, 2))
         self.line_num_label = ttk.Label(info_row, text="0 / 0", style="Status.TLabel")
         self.line_num_label.pack(side=tk.LEFT, padx=(0, 15))
 
         # Current English content
         en_row = ttk.Frame(status_frame)
         en_row.pack(fill=tk.X, pady=1)
-        ttk.Label(en_row, text="EN:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(en_row, text="英文：").pack(side=tk.LEFT, padx=(5, 2))
         self.current_en_label = ttk.Label(
             en_row, text="", style="Highlight.TLabel", wraplength=800
         )
@@ -370,7 +370,7 @@ class EnglishLyricsReader:
         # Current Chinese content
         cn_row = ttk.Frame(status_frame)
         cn_row.pack(fill=tk.X, pady=1)
-        ttk.Label(cn_row, text="CN:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(cn_row, text="中文：").pack(side=tk.LEFT, padx=(5, 2))
         self.current_cn_label = ttk.Label(
             cn_row, text="", style="Highlight.TLabel", wraplength=800
         )
@@ -379,7 +379,7 @@ class EnglishLyricsReader:
         # Progress bar
         progress_row = ttk.Frame(status_frame)
         progress_row.pack(fill=tk.X, pady=2)
-        ttk.Label(progress_row, text="Progress:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(progress_row, text="进度：").pack(side=tk.LEFT, padx=(5, 2))
         self.progress_var = tk.DoubleVar(value=0)
         self.progress_bar = ttk.Progressbar(
             progress_row, variable=self.progress_var,
@@ -390,9 +390,9 @@ class EnglishLyricsReader:
         # Status message
         msg_row = ttk.Frame(status_frame)
         msg_row.pack(fill=tk.X, pady=1)
-        ttk.Label(msg_row, text="Status:").pack(side=tk.LEFT, padx=(5, 2))
+        ttk.Label(msg_row, text="状态：").pack(side=tk.LEFT, padx=(5, 2))
         self.status_msg_label = ttk.Label(
-            msg_row, text="Ready", style="Status.TLabel"
+            msg_row, text="就绪", style="Status.TLabel"
         )
         self.status_msg_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
@@ -434,7 +434,7 @@ class EnglishLyricsReader:
 
     def _load_voices_async(self):
         """Load voices in a background thread."""
-        self._set_status("Loading voices from edge-tts...")
+        self._set_status("正在加载语音列表...")
 
         def _load():
             try:
@@ -443,7 +443,7 @@ class EnglishLyricsReader:
                 self.chinese_voice_names = get_chinese_voices(self.all_voices)
                 self.root.after(0, self._populate_voice_combos)
             except Exception as err:
-                msg = f"Failed to load voices: {err}"
+                msg = f"加载语音失败: {err}"
                 self.root.after(0, lambda m=msg: self._set_status(m))
 
         thread = threading.Thread(target=_load, daemon=True)
@@ -466,8 +466,8 @@ class EnglishLyricsReader:
                 self.cn_voice_var.set(self.chinese_voice_names[0])
 
         self._set_status(
-            f"Voices loaded: {len(self.english_voice_names)} EN, "
-            f"{len(self.chinese_voice_names)} CN"
+            f"语音已加载: {len(self.english_voice_names)} 个英文, "
+            f"{len(self.chinese_voice_names)} 个中文"
         )
 
     # ─── Text Helpers ───────────────────────────────────────────────
@@ -574,14 +574,14 @@ class EnglishLyricsReader:
         self.cn_text.delete("1.0", tk.END)
         self.en_text.insert("1.0", SAMPLE_ENGLISH.strip())
         self.cn_text.insert("1.0", SAMPLE_CHINESE.strip())
-        self._set_status("Sample text loaded.")
+        self._set_status("示例文本已加载。")
 
     def import_txt(self):
         """Import lyrics from a TXT file."""
         filepath = filedialog.askopenfilename(
-            title="Import TXT File",
-            filetypes=[("Text Files", "*.txt"), ("JSON Files", "*.json"),
-                       ("All Files", "*.*")]
+            title="导入文件",
+            filetypes=[("文本文件", "*.txt"), ("JSON文件", "*.json"),
+                       ("所有文件", "*.*")]
         )
         if not filepath:
             return
@@ -610,16 +610,16 @@ class EnglishLyricsReader:
             if cn_text:
                 self.cn_text.insert("1.0", cn_text)
 
-            self._set_status(f"Imported: {os.path.basename(filepath)}")
+            self._set_status(f"已导入: {os.path.basename(filepath)}")
         except Exception as e:
-            messagebox.showerror("Import Error", f"Failed to import file:\n{e}")
+            messagebox.showerror("导入错误", f"导入文件失败:\n{e}")
 
     def save_txt(self):
         """Save lyrics to a TXT file."""
         filepath = filedialog.asksaveasfilename(
-            title="Save as TXT",
+            title="保存为TXT",
             defaultextension=".txt",
-            filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")]
+            filetypes=[("文本文件", "*.txt"), ("所有文件", "*.*")]
         )
         if not filepath:
             return
@@ -634,16 +634,16 @@ class EnglishLyricsReader:
                     f.write("\n---\n")
                     f.write(cn_text)
 
-            self._set_status(f"Saved: {os.path.basename(filepath)}")
+            self._set_status(f"已保存: {os.path.basename(filepath)}")
         except Exception as e:
-            messagebox.showerror("Save Error", f"Failed to save file:\n{e}")
+            messagebox.showerror("保存错误", f"保存文件失败:\n{e}")
 
     def save_json(self):
         """Save lyrics to a JSON project file."""
         filepath = filedialog.asksaveasfilename(
-            title="Save as JSON",
+            title="保存为JSON",
             defaultextension=".json",
-            filetypes=[("JSON Files", "*.json"), ("All Files", "*.*")]
+            filetypes=[("JSON文件", "*.json"), ("所有文件", "*.*")]
         )
         if not filepath:
             return
@@ -671,16 +671,16 @@ class EnglishLyricsReader:
             with open(filepath, "w", encoding="utf-8") as f:
                 json.dump(data, f, ensure_ascii=False, indent=2)
 
-            self._set_status(f"Saved: {os.path.basename(filepath)}")
+            self._set_status(f"已保存: {os.path.basename(filepath)}")
         except Exception as e:
-            messagebox.showerror("Save Error", f"Failed to save file:\n{e}")
+            messagebox.showerror("保存错误", f"保存文件失败:\n{e}")
 
     def clear_text(self):
         """Clear all text areas."""
         self.en_text.delete("1.0", tk.END)
         self.cn_text.delete("1.0", tk.END)
         self._update_line_info(0, 0)
-        self._set_status("Text cleared.")
+        self._set_status("文本已清空。")
 
     # ─── Playback Operations ────────────────────────────────────────
 
@@ -693,7 +693,7 @@ class EnglishLyricsReader:
             stop_event: Per-session Event; when set, playback stops.
         """
         if not PYGAME_AVAILABLE:
-            self._set_status("pygame not available for audio playback")
+            self.root.after(0, lambda: self._set_status("pygame未安装，无法播放音频"))
             return
         if stop_event is None:
             stop_event = self._stop_event
@@ -716,7 +716,7 @@ class EnglishLyricsReader:
                     break
                 time.sleep(0.05)
         except Exception as err:
-            msg = f"Playback error: {err}"
+            msg = f"播放错误: {err}"
             self.root.after(0, lambda m=msg: self._set_status(m))
 
     def _synthesize_and_play_line(self, text: str, voice: str,
@@ -764,7 +764,7 @@ class EnglishLyricsReader:
 
             return not stop_event.is_set()
         except Exception as err:
-            msg = f"TTS Error: {err}"
+            msg = f"TTS错误: {err}"
             self.root.after(0, lambda m=msg: self._set_status(m))
             return not stop_event.is_set()
 
@@ -785,7 +785,7 @@ class EnglishLyricsReader:
         total = len(en_lines)
 
         if total == 0:
-            self.root.after(0, lambda: self._set_status("No text to read."))
+            self.root.after(0, lambda: self._set_status("没有可朗读的文本。"))
             self.root.after(0, lambda: self._set_reading_state(False))
             return
 
@@ -812,7 +812,7 @@ class EnglishLyricsReader:
             self.root.after(0, lambda ei=i+1, t=total, e=en_line, c=cn_line:
                             self._update_line_info(ei, t, e, c))
             self.root.after(0, lambda e=en_line:
-                            self._set_status(f"Reading: {e[:60]}..."))
+                            self._set_status(f"正在朗读: {e[:60]}..."))
 
             # Read English line
             if en_line.strip():
@@ -849,16 +849,16 @@ class EnglishLyricsReader:
         self.is_reading = False
         self.root.after(0, lambda: self._set_reading_state(False))
         if not stop_event.is_set():
-            self.root.after(0, lambda: self._set_status("Reading complete."))
+            self.root.after(0, lambda: self._set_status("朗读完成。"))
             self.root.after(0, lambda: self.progress_var.set(100))
         else:
-            self.root.after(0, lambda: self._set_status("Reading stopped."))
+            self.root.after(0, lambda: self._set_status("朗读已停止。"))
 
     def start_reading(self):
         """Start reading lyrics."""
         en_lines = self._get_english_lines()
         if not en_lines:
-            self._set_status("No English text to read.")
+            self._set_status("没有英文文本可以朗读。")
             return
 
         mode = self.mode_var.get()
@@ -927,7 +927,7 @@ class EnglishLyricsReader:
                     pygame.mixer.music.pause()
                 except Exception:
                     pass
-            self._set_status("Paused.")
+            self._set_status("已暂停。")
 
     def resume_reading(self):
         """Resume the paused reading."""
@@ -940,7 +940,7 @@ class EnglishLyricsReader:
                     pygame.mixer.music.unpause()
                 except Exception:
                     pass
-            self._set_status("Resumed.")
+            self._set_status("已继续。")
 
     def stop_reading(self):
         """Stop the current reading."""
@@ -955,13 +955,13 @@ class EnglishLyricsReader:
         self._set_reading_state(False)
         self.en_text.tag_remove("highlight", "1.0", tk.END)
         self.cn_text.tag_remove("highlight", "1.0", tk.END)
-        self._set_status("Stopped.")
+        self._set_status("已停止。")
 
     def preview_current_line(self):
         """Preview (read aloud) the current selected line."""
         en_lines = self._get_english_lines()
         if not en_lines:
-            self._set_status("No text to preview.")
+            self._set_status("没有可试听的文本。")
             return
 
         # Stop any ongoing playback first
@@ -977,7 +977,7 @@ class EnglishLyricsReader:
 
         self._highlight_line(idx)
         self._update_line_info(idx + 1, len(en_lines), en_line, cn_line)
-        self._set_status(f"Previewing line {idx + 1}...")
+        self._set_status(f"正在试听第 {idx + 1} 行...")
 
         # Create a new stop event for this preview session
         stop_event = threading.Event()
@@ -994,7 +994,7 @@ class EnglishLyricsReader:
                 self._synthesize_and_play_line(cn_line, cn_voice, stop_event)
             self.is_reading = False
             self.root.after(0, lambda: self._set_reading_state(False))
-            self.root.after(0, lambda: self._set_status("Preview complete."))
+            self.root.after(0, lambda: self._set_status("试听完成。"))
 
         self.reading_thread = threading.Thread(target=_preview, daemon=True)
         self.reading_thread.start()
@@ -1007,7 +1007,7 @@ class EnglishLyricsReader:
         en_lines = self._get_english_lines()
 
         if not en_lines:
-            self._set_status("No text to export.")
+            self._set_status("没有可导出的文本。")
             return
 
         if export_mode == EXPORT_ALL:
@@ -1020,14 +1020,14 @@ class EnglishLyricsReader:
     def _export_all_lines(self, en_lines: List[str]):
         """Export all lines as a single MP3 file."""
         filepath = filedialog.asksaveasfilename(
-            title="Export All as MP3",
+            title="导出全部为MP3",
             defaultextension=".mp3",
-            filetypes=[("MP3 Files", "*.mp3"), ("All Files", "*.*")]
+            filetypes=[("MP3文件", "*.mp3"), ("所有文件", "*.*")]
         )
         if not filepath:
             return
 
-        self._set_status("Exporting all lines...")
+        self._set_status("正在导出全部行...")
 
         def _export():
             try:
@@ -1044,18 +1044,18 @@ class EnglishLyricsReader:
                     pitch=self._get_pitch_str(),
                 )
                 self.root.after(0, lambda: self._set_status(
-                    f"Exported: {os.path.basename(filepath)}"
+                    f"已导出: {os.path.basename(filepath)}"
                 ))
                 self.root.after(0, lambda: messagebox.showinfo(
-                    "Export Complete",
-                    f"Audio exported to:\n{filepath}"
+                    "导出完成",
+                    f"音频已导出到:\n{filepath}"
                 ))
             except Exception as err:
-                msg = f"Export error: {err}"
+                msg = f"导出错误: {err}"
                 self.root.after(0, lambda m=msg: self._set_status(m))
-                detail = f"Failed to export:\n{err}"
+                detail = f"导出失败:\n{err}"
                 self.root.after(0, lambda d=detail: messagebox.showerror(
-                    "Export Error", d
+                    "导出错误", d
                 ))
 
         thread = threading.Thread(target=_export, daemon=True)
@@ -1069,19 +1069,19 @@ class EnglishLyricsReader:
 
         line = en_lines[idx]
         if not line.strip():
-            self._set_status("Selected line is empty.")
+            self._set_status("选中行为空。")
             return
 
         filepath = filedialog.asksaveasfilename(
-            title=f"Export Line {idx + 1} as MP3",
+            title=f"导出第 {idx + 1} 行为MP3",
             defaultextension=".mp3",
             initialfile=f"line_{idx + 1:03d}.mp3",
-            filetypes=[("MP3 Files", "*.mp3"), ("All Files", "*.*")]
+            filetypes=[("MP3文件", "*.mp3"), ("所有文件", "*.*")]
         )
         if not filepath:
             return
 
-        self._set_status(f"Exporting line {idx + 1}...")
+        self._set_status(f"正在导出第 {idx + 1} 行...")
 
         def _export():
             try:
@@ -1094,10 +1094,10 @@ class EnglishLyricsReader:
                     pitch=self._get_pitch_str(),
                 )
                 self.root.after(0, lambda: self._set_status(
-                    f"Exported line {idx + 1}: {os.path.basename(filepath)}"
+                    f"已导出第 {idx + 1} 行: {os.path.basename(filepath)}"
                 ))
             except Exception as err:
-                msg = f"Export error: {err}"
+                msg = f"导出错误: {err}"
                 self.root.after(0, lambda m=msg: self._set_status(m))
 
         thread = threading.Thread(target=_export, daemon=True)
@@ -1105,11 +1105,11 @@ class EnglishLyricsReader:
 
     def _export_per_line(self, en_lines: List[str]):
         """Export each line as a separate MP3 file in a folder."""
-        folder = filedialog.askdirectory(title="Select Output Folder")
+        folder = filedialog.askdirectory(title="选择输出文件夹")
         if not folder:
             return
 
-        self._set_status("Exporting per-line audio files...")
+        self._set_status("正在逐行导出音频文件...")
 
         def _export():
             try:
@@ -1131,7 +1131,7 @@ class EnglishLyricsReader:
                     exported += 1
                     self.root.after(0, lambda c=exported, t=total:
                                     self._set_status(
-                                        f"Exported {c}/{t} lines..."
+                                        f"已导出 {c}/{t} 行..."
                                     ))
                     self.root.after(0, lambda c=exported, t=total:
                                     self.progress_var.set(
@@ -1139,18 +1139,18 @@ class EnglishLyricsReader:
                                     ))
 
                 self.root.after(0, lambda: self._set_status(
-                    f"Exported {exported} files to: {folder}"
+                    f"已导出 {exported} 个文件到: {folder}"
                 ))
                 self.root.after(0, lambda: messagebox.showinfo(
-                    "Export Complete",
-                    f"Exported {exported} audio files to:\n{folder}"
+                    "导出完成",
+                    f"已导出 {exported} 个音频文件到:\n{folder}"
                 ))
             except Exception as err:
-                msg = f"Export error: {err}"
+                msg = f"导出错误: {err}"
                 self.root.after(0, lambda m=msg: self._set_status(m))
-                detail = f"Failed to export:\n{err}"
+                detail = f"导出失败:\n{err}"
                 self.root.after(0, lambda d=detail: messagebox.showerror(
-                    "Export Error", d
+                    "导出错误", d
                 ))
 
         thread = threading.Thread(target=_export, daemon=True)

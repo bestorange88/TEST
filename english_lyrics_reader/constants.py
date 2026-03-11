@@ -1,6 +1,6 @@
 """Constants and sample data for English Lyrics Reader."""
 
-APP_TITLE = "English Lyrics Reader"
+APP_TITLE = "英文歌词朗读器"
 APP_VERSION = "1.0.0"
 WINDOW_MIN_WIDTH = 1100
 WINDOW_MIN_HEIGHT = 750
@@ -13,16 +13,16 @@ DEFAULT_PITCH = "+0Hz"
 DEFAULT_PAUSE_MS = 500
 
 # Reading modes
-MODE_ENGLISH_ONLY = "English Only"
-MODE_ENGLISH_THEN_CHINESE = "English then Chinese"
-MODE_SELECTED_LINE = "Selected Line Only"
+MODE_ENGLISH_ONLY = "仅朗读英文"
+MODE_ENGLISH_THEN_CHINESE = "先英文后中文"
+MODE_SELECTED_LINE = "仅朗读当前选中行"
 
 READING_MODES = [MODE_ENGLISH_ONLY, MODE_ENGLISH_THEN_CHINESE, MODE_SELECTED_LINE]
 
 # Export modes
-EXPORT_ALL = "Export All"
-EXPORT_SELECTED = "Export Selected Line"
-EXPORT_PER_LINE = "Export Per-Line Files"
+EXPORT_ALL = "导出全部"
+EXPORT_SELECTED = "导出选中行"
+EXPORT_PER_LINE = "逐行导出到文件夹"
 
 EXPORT_MODES = [EXPORT_ALL, EXPORT_SELECTED, EXPORT_PER_LINE]
 
