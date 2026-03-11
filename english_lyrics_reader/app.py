@@ -598,9 +598,14 @@ class EnglishLyricsReader:
                 en_text = data.get("english", "")
                 cn_text = data.get("chinese", "")
             else:
-                # Check for separator markers
-                if "---" in content or "===" in content:
-                    parts = content.split("---") if "---" in content else content.split("===")
+                # Check for separator markers (must be on their own line,
+                # matching the format save_txt writes: "\n---\n")
+                if "\n---\n" in content:
+                    parts = content.split("\n---\n", 1)
+                    en_text = parts[0].strip()
+                    cn_text = parts[1].strip() if len(parts) > 1 else ""
+                elif "\n===\n" in content:
+                    parts = content.split("\n===\n", 1)
                     en_text = parts[0].strip()
                     cn_text = parts[1].strip() if len(parts) > 1 else ""
                 else:
