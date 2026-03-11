@@ -574,6 +574,9 @@ class EnglishLyricsReader:
         self.cn_text.delete("1.0", tk.END)
         self.en_text.insert("1.0", SAMPLE_ENGLISH.strip())
         self.cn_text.insert("1.0", SAMPLE_CHINESE.strip())
+        # Move cursor to beginning so "开始朗读" starts from line 1
+        self.en_text.mark_set(tk.INSERT, "1.0")
+        self.en_text.see("1.0")
         self._set_status("示例文本已加载。")
 
     def import_txt(self):
@@ -609,6 +612,9 @@ class EnglishLyricsReader:
             self.en_text.insert("1.0", en_text)
             if cn_text:
                 self.cn_text.insert("1.0", cn_text)
+            # Move cursor to beginning
+            self.en_text.mark_set(tk.INSERT, "1.0")
+            self.en_text.see("1.0")
 
             self._set_status(f"已导入: {os.path.basename(filepath)}")
         except Exception as e:
@@ -766,7 +772,8 @@ class EnglishLyricsReader:
         except Exception as err:
             msg = f"TTS错误: {err}"
             self.root.after(0, lambda m=msg: self._set_status(m))
-            return not stop_event.is_set()
+            # Stop reading on TTS error so user can see the error message
+            return False
 
     def _reading_worker(self, start_index: int = 0,
                          single_line: bool = False,
@@ -870,7 +877,12 @@ class EnglishLyricsReader:
             self.root.after(0, lambda: self._set_status("朗读已停止。"))
 
     def start_reading(self):
-        """Start reading lyrics."""
+        """Start reading lyrics.
+
+        For full-reading modes (English only / English then Chinese),
+        always starts from line 1. For 'Selected Line Only' mode,
+        reads only the line where the cursor is.
+        """
         en_lines = self._get_english_lines()
         if not en_lines:
             self._set_status("没有英文文本可以朗读。")
@@ -885,12 +897,8 @@ class EnglishLyricsReader:
             self._start_reading_from(idx, single_line=True)
             return
 
-        # Start from selected line or beginning
-        start_idx = self._get_selected_line_index()
-        if start_idx >= len(en_lines):
-            start_idx = 0
-
-        self._start_reading_from(start_idx)
+        # Always start from the first line for full-reading modes
+        self._start_reading_from(0)
 
     def _stop_any_playback(self):
         """Stop any ongoing reading or preview before starting new playback.
