@@ -850,9 +850,25 @@ class EnglishLyricsReader:
 
         self._start_reading_from(start_idx)
 
+    def _stop_any_playback(self):
+        """Stop any ongoing reading or preview before starting new playback."""
+        if self.is_reading or (self.reading_thread and self.reading_thread.is_alive()):
+            self.should_stop = True
+            self.is_paused = False
+            if PYGAME_AVAILABLE:
+                try:
+                    pygame.mixer.music.stop()
+                except Exception:
+                    pass
+            # Wait briefly for the thread to finish
+            if self.reading_thread and self.reading_thread.is_alive():
+                self.reading_thread.join(timeout=1.0)
+            self.is_reading = False
+
     def _start_reading_from(self, start_index: int,
                               single_line: bool = False):
         """Start reading from a specific line index."""
+        self._stop_any_playback()
         self.is_reading = True
         self.is_paused = False
         self.should_stop = False
@@ -913,6 +929,9 @@ class EnglishLyricsReader:
             self._set_status("No text to preview.")
             return
 
+        # Stop any ongoing playback first
+        self._stop_any_playback()
+
         idx = self._get_selected_line_index()
         if idx >= len(en_lines):
             idx = 0
@@ -925,6 +944,11 @@ class EnglishLyricsReader:
         self._update_line_info(idx + 1, len(en_lines), en_line, cn_line)
         self._set_status(f"Previewing line {idx + 1}...")
 
+        # Mark as reading to prevent concurrent playback
+        self.is_reading = True
+        self.should_stop = False
+        self._set_reading_state(True)
+
         def _preview():
             voice = self.voice_var.get()
             self._synthesize_and_play_line(en_line, voice)
@@ -932,11 +956,12 @@ class EnglishLyricsReader:
             if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
                 cn_voice = self.cn_voice_var.get()
                 self._synthesize_and_play_line(cn_line, cn_voice)
+            self.is_reading = False
+            self.root.after(0, lambda: self._set_reading_state(False))
             self.root.after(0, lambda: self._set_status("Preview complete."))
 
-        self.should_stop = False
-        thread = threading.Thread(target=_preview, daemon=True)
-        thread.start()
+        self.reading_thread = threading.Thread(target=_preview, daemon=True)
+        self.reading_thread.start()
 
     # ─── Export Operations ──────────────────────────────────────────
 
