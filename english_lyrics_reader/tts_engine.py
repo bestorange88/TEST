@@ -1,12 +1,19 @@
 """TTS Engine module using edge-tts for text-to-speech functionality."""
 
 import asyncio
+import logging
 import os
 from typing import List, Optional, Callable
 
 import edge_tts
 
 from english_lyrics_reader.constants import DEFAULT_VOICE
+
+logger = logging.getLogger(__name__)
+
+# Retry configuration for transient TTS connection errors
+MAX_RETRIES = 3
+RETRY_DELAY_SECONDS = 1.0
 
 
 async def get_available_voices() -> List[dict]:
@@ -49,7 +56,7 @@ async def synthesize_to_file(
     volume: str = "+0%",
     pitch: str = "+0Hz",
 ) -> str:
-    """Synthesize text to an audio file.
+    """Synthesize text to an audio file with automatic retry.
 
     Args:
         text: The text to synthesize.
@@ -61,16 +68,35 @@ async def synthesize_to_file(
 
     Returns:
         The output file path.
+
+    Raises:
+        Exception: If synthesis fails after all retries.
     """
-    communicate = edge_tts.Communicate(
-        text=text,
-        voice=voice,
-        rate=rate,
-        volume=volume,
-        pitch=pitch,
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            communicate = edge_tts.Communicate(
+                text=text,
+                voice=voice,
+                rate=rate,
+                volume=volume,
+                pitch=pitch,
+            )
+            await communicate.save(output_path)
+            return output_path
+        except Exception as err:
+            last_error = err
+            logger.warning(
+                "TTS synthesis attempt %d/%d failed: %s",
+                attempt, MAX_RETRIES, err
+            )
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(RETRY_DELAY_SECONDS * attempt)
+    raise ConnectionError(
+        f"TTS连接失败，已重试{MAX_RETRIES}次。"
+        f"\n请检查网络连接并确认 edge-tts 服务可用。"
+        f"\n原始错误: {last_error}"
     )
-    await communicate.save(output_path)
-    return output_path
 
 
 def synthesize_to_file_sync(
@@ -99,7 +125,7 @@ async def synthesize_to_bytes(
     volume: str = "+0%",
     pitch: str = "+0Hz",
 ) -> bytes:
-    """Synthesize text and return audio bytes.
+    """Synthesize text and return audio bytes with automatic retry.
 
     Args:
         text: The text to synthesize.
@@ -110,19 +136,38 @@ async def synthesize_to_bytes(
 
     Returns:
         Audio data as bytes.
+
+    Raises:
+        Exception: If synthesis fails after all retries.
     """
-    communicate = edge_tts.Communicate(
-        text=text,
-        voice=voice,
-        rate=rate,
-        volume=volume,
-        pitch=pitch,
+    last_error = None
+    for attempt in range(1, MAX_RETRIES + 1):
+        try:
+            communicate = edge_tts.Communicate(
+                text=text,
+                voice=voice,
+                rate=rate,
+                volume=volume,
+                pitch=pitch,
+            )
+            audio_data = b""
+            async for chunk in communicate.stream():
+                if chunk["type"] == "audio":
+                    audio_data += chunk["data"]
+            return audio_data
+        except Exception as err:
+            last_error = err
+            logger.warning(
+                "TTS synthesis attempt %d/%d failed: %s",
+                attempt, MAX_RETRIES, err
+            )
+            if attempt < MAX_RETRIES:
+                await asyncio.sleep(RETRY_DELAY_SECONDS * attempt)
+    raise ConnectionError(
+        f"TTS连接失败，已重试{MAX_RETRIES}次。"
+        f"\n请检查网络连接并确认 edge-tts 服务可用。"
+        f"\n原始错误: {last_error}"
     )
-    audio_data = b""
-    async for chunk in communicate.stream():
-        if chunk["type"] == "audio":
-            audio_data += chunk["data"]
-    return audio_data
 
 
 def synthesize_to_bytes_sync(
