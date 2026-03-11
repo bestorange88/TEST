@@ -694,12 +694,18 @@ class EnglishLyricsReader:
             pygame.mixer.music.load(filepath)
             pygame.mixer.music.play()
             # Wait for playback to finish
-            while pygame.mixer.music.get_busy():
+            # Use a flag to track if we are in a paused state to avoid
+            # exiting the loop when get_busy() returns False due to pause.
+            while True:
                 if self.should_stop:
                     pygame.mixer.music.stop()
                     return
-                while self.is_paused and not self.should_stop:
+                if self.is_paused:
+                    # While paused, just wait without checking get_busy
                     time.sleep(0.1)
+                    continue
+                if not pygame.mixer.music.get_busy():
+                    break
                 time.sleep(0.05)
         except Exception as err:
             msg = f"Playback error: {err}"
@@ -744,8 +750,14 @@ class EnglishLyricsReader:
             self.root.after(0, lambda m=msg: self._set_status(m))
             return not self.should_stop
 
-    def _reading_worker(self, start_index: int = 0):
-        """Background worker for reading lyrics line by line."""
+    def _reading_worker(self, start_index: int = 0,
+                         single_line: bool = False):
+        """Background worker for reading lyrics line by line.
+
+        Args:
+            start_index: The line index to start reading from.
+            single_line: If True, only read the single line at start_index.
+        """
         en_lines, cn_lines = self._get_aligned_lines()
         total = len(en_lines)
 
@@ -757,8 +769,10 @@ class EnglishLyricsReader:
         mode = self.mode_var.get()
         pause_ms = self.pause_var.get()
 
+        end_index = start_index + 1 if single_line else total
+
         i = start_index
-        while i < total and not self.should_stop:
+        while i < end_index and not self.should_stop:
             # Wait while paused
             while self.is_paused and not self.should_stop:
                 time.sleep(0.1)
@@ -799,7 +813,7 @@ class EnglishLyricsReader:
                 continue
 
             # Pause between lines
-            if not self.should_stop and i < total - 1:
+            if not self.should_stop and i < end_index - 1:
                 time.sleep(pause_ms / 1000.0)
 
             i += 1
@@ -822,12 +836,11 @@ class EnglishLyricsReader:
 
         mode = self.mode_var.get()
         if mode == MODE_SELECTED_LINE:
-            # Only read the selected line
+            # Only read the single selected line
             idx = self._get_selected_line_index()
             if idx >= len(en_lines):
                 idx = 0
-            self._start_reading_from(idx)
-            # For selected line mode, we just read one line
+            self._start_reading_from(idx, single_line=True)
             return
 
         # Start from selected line or beginning
@@ -837,7 +850,8 @@ class EnglishLyricsReader:
 
         self._start_reading_from(start_idx)
 
-    def _start_reading_from(self, start_index: int):
+    def _start_reading_from(self, start_index: int,
+                              single_line: bool = False):
         """Start reading from a specific line index."""
         self.is_reading = True
         self.is_paused = False
@@ -846,7 +860,7 @@ class EnglishLyricsReader:
 
         self.reading_thread = threading.Thread(
             target=self._reading_worker,
-            args=(start_index,),
+            args=(start_index, single_line),
             daemon=True
         )
         self.reading_thread.start()
