@@ -770,27 +770,44 @@ class EnglishLyricsReader:
 
     def _reading_worker(self, start_index: int = 0,
                          single_line: bool = False,
-                         stop_event: threading.Event = None):
+                         stop_event: threading.Event = None,
+                         en_lines: List[str] = None,
+                         cn_lines: List[str] = None,
+                         mode: str = "",
+                         pause_ms: int = 500,
+                         voice: str = "",
+                         cn_voice: str = "",
+                         loop: bool = False):
         """Background worker for reading lyrics line by line.
+
+        All tkinter state (lines, mode, voice, etc.) must be captured on
+        the main thread and passed in to avoid thread-safety issues.
 
         Args:
             start_index: The line index to start reading from.
             single_line: If True, only read the single line at start_index.
             stop_event: Per-session Event; when set, reading stops.
+            en_lines: Pre-captured English lines.
+            cn_lines: Pre-captured Chinese lines.
+            mode: Reading mode string.
+            pause_ms: Pause between lines in milliseconds.
+            voice: English voice name.
+            cn_voice: Chinese voice name.
+            loop: Whether to loop current line.
         """
         if stop_event is None:
             stop_event = self._stop_event
+        if en_lines is None:
+            en_lines = []
+        if cn_lines is None:
+            cn_lines = []
 
-        en_lines, cn_lines = self._get_aligned_lines()
         total = len(en_lines)
 
         if total == 0:
             self.root.after(0, lambda: self._set_status("没有可朗读的文本。"))
             self.root.after(0, lambda: self._set_reading_state(False))
             return
-
-        mode = self.mode_var.get()
-        pause_ms = self.pause_var.get()
 
         end_index = start_index + 1 if single_line else total
 
@@ -816,7 +833,6 @@ class EnglishLyricsReader:
 
             # Read English line
             if en_line.strip():
-                voice = self.voice_var.get()
                 if not self._synthesize_and_play_line(
                     en_line, voice, stop_event
                 ):
@@ -826,14 +842,13 @@ class EnglishLyricsReader:
             if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
                 if stop_event.is_set():
                     break
-                cn_voice = self.cn_voice_var.get()
                 if not self._synthesize_and_play_line(
                     cn_line, cn_voice, stop_event
                 ):
                     break
 
             # Handle loop mode
-            if self.loop_var.get():
+            if loop:
                 # Stay on current line
                 if not stop_event.is_set():
                     time.sleep(pause_ms / 1000.0)
@@ -899,6 +914,15 @@ class EnglishLyricsReader:
     def _start_reading_from(self, start_index: int,
                               single_line: bool = False):
         """Start reading from a specific line index."""
+        # Capture all tkinter state on the main thread before spawning
+        # the background thread to avoid thread-safety issues.
+        en_lines, cn_lines = self._get_aligned_lines()
+        mode = self.mode_var.get()
+        pause_ms = self.pause_var.get()
+        voice = self.voice_var.get()
+        cn_voice = self.cn_voice_var.get()
+        loop = self.loop_var.get()
+
         self._stop_any_playback()
         # Create a NEW stop event for this session. The old thread (if still
         # alive) holds a reference to the previous (now-set) event, so it
@@ -911,7 +935,9 @@ class EnglishLyricsReader:
 
         self.reading_thread = threading.Thread(
             target=self._reading_worker,
-            args=(start_index, single_line, stop_event),
+            args=(start_index, single_line, stop_event,
+                  en_lines, cn_lines, mode, pause_ms,
+                  voice, cn_voice, loop),
             daemon=True
         )
         self.reading_thread.start()
@@ -979,6 +1005,11 @@ class EnglishLyricsReader:
         self._update_line_info(idx + 1, len(en_lines), en_line, cn_line)
         self._set_status(f"正在试听第 {idx + 1} 行...")
 
+        # Capture tkinter state on main thread before spawning thread
+        voice = self.voice_var.get()
+        mode = self.mode_var.get()
+        cn_voice = self.cn_voice_var.get()
+
         # Create a new stop event for this preview session
         stop_event = threading.Event()
         self._stop_event = stop_event
@@ -986,11 +1017,8 @@ class EnglishLyricsReader:
         self._set_reading_state(True)
 
         def _preview():
-            voice = self.voice_var.get()
             self._synthesize_and_play_line(en_line, voice, stop_event)
-            mode = self.mode_var.get()
             if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
-                cn_voice = self.cn_voice_var.get()
                 self._synthesize_and_play_line(cn_line, cn_voice, stop_event)
             self.is_reading = False
             self.root.after(0, lambda: self._set_reading_state(False))
@@ -1029,6 +1057,12 @@ class EnglishLyricsReader:
 
         self._set_status("正在导出全部行...")
 
+        # Capture tkinter state on main thread
+        voice = self.voice_var.get()
+        rate = self._get_rate_str()
+        volume = self._get_volume_str()
+        pitch = self._get_pitch_str()
+
         def _export():
             try:
                 # Combine all lines into one text
@@ -1038,10 +1072,10 @@ class EnglishLyricsReader:
                 synthesize_to_file_sync(
                     text=combined_text,
                     output_path=filepath,
-                    voice=self.voice_var.get(),
-                    rate=self._get_rate_str(),
-                    volume=self._get_volume_str(),
-                    pitch=self._get_pitch_str(),
+                    voice=voice,
+                    rate=rate,
+                    volume=volume,
+                    pitch=pitch,
                 )
                 self.root.after(0, lambda: self._set_status(
                     f"已导出: {os.path.basename(filepath)}"
@@ -1083,15 +1117,21 @@ class EnglishLyricsReader:
 
         self._set_status(f"正在导出第 {idx + 1} 行...")
 
+        # Capture tkinter state on main thread
+        voice = self.voice_var.get()
+        rate = self._get_rate_str()
+        volume = self._get_volume_str()
+        pitch = self._get_pitch_str()
+
         def _export():
             try:
                 synthesize_to_file_sync(
                     text=line,
                     output_path=filepath,
-                    voice=self.voice_var.get(),
-                    rate=self._get_rate_str(),
-                    volume=self._get_volume_str(),
-                    pitch=self._get_pitch_str(),
+                    voice=voice,
+                    rate=rate,
+                    volume=volume,
+                    pitch=pitch,
                 )
                 self.root.after(0, lambda: self._set_status(
                     f"已导出第 {idx + 1} 行: {os.path.basename(filepath)}"
@@ -1111,6 +1151,12 @@ class EnglishLyricsReader:
 
         self._set_status("正在逐行导出音频文件...")
 
+        # Capture tkinter state on main thread
+        voice = self.voice_var.get()
+        rate = self._get_rate_str()
+        volume = self._get_volume_str()
+        pitch = self._get_pitch_str()
+
         def _export():
             try:
                 total = len(en_lines)
@@ -1123,10 +1169,10 @@ class EnglishLyricsReader:
                     synthesize_to_file_sync(
                         text=line,
                         output_path=output_path,
-                        voice=self.voice_var.get(),
-                        rate=self._get_rate_str(),
-                        volume=self._get_volume_str(),
-                        pitch=self._get_pitch_str(),
+                        voice=voice,
+                        rate=rate,
+                        volume=volume,
+                        pitch=pitch,
                     )
                     exported += 1
                     self.root.after(0, lambda c=exported, t=total:
