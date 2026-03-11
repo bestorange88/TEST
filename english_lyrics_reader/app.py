@@ -1051,18 +1051,21 @@ class EnglishLyricsReader:
         self._set_reading_state(True)
 
         def _preview():
-            self._synthesize_and_play_line(
+            ok = self._synthesize_and_play_line(
                 en_line, voice, stop_event,
                 rate=rate, volume=volume, pitch=pitch,
             )
-            if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
-                self._synthesize_and_play_line(
+            if ok and mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
+                ok = self._synthesize_and_play_line(
                     cn_line, cn_voice, stop_event,
                     rate=rate, volume=volume, pitch=pitch,
                 )
             self.is_reading = False
             self.root.after(0, lambda: self._set_reading_state(False))
-            self.root.after(0, lambda: self._set_status("试听完成。"))
+            if not stop_event.is_set():
+                self.root.after(0, lambda: self._set_status("试听完成。"))
+            else:
+                self.root.after(0, lambda: self._set_status("试听已停止。"))
 
         self.reading_thread = threading.Thread(target=_preview, daemon=True)
         self.reading_thread.start()
