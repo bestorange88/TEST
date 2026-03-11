@@ -731,7 +731,10 @@ class EnglishLyricsReader:
             self.root.after(0, lambda m=msg: self._set_status(m))
 
     def _synthesize_and_play_line(self, text: str, voice: str,
-                                    stop_event: threading.Event = None
+                                    stop_event: threading.Event = None,
+                                    rate: str = "",
+                                    volume: str = "",
+                                    pitch: str = "",
                                     ) -> bool:
         """Synthesize a line and play it. Returns False if stopped.
 
@@ -739,6 +742,9 @@ class EnglishLyricsReader:
             text: Text to synthesize.
             voice: Voice name to use.
             stop_event: Per-session Event; when set, synthesis/playback stops.
+            rate: Pre-captured rate string (e.g. '+0%').
+            volume: Pre-captured volume string (e.g. '+0%').
+            pitch: Pre-captured pitch string (e.g. '+0Hz').
         """
         if not text.strip():
             return True
@@ -757,9 +763,9 @@ class EnglishLyricsReader:
                 text=text,
                 output_path=temp_file,
                 voice=voice,
-                rate=self._get_rate_str(),
-                volume=self._get_volume_str(),
-                pitch=self._get_pitch_str(),
+                rate=rate,
+                volume=volume,
+                pitch=pitch,
             )
 
             if stop_event.is_set():
@@ -789,7 +795,10 @@ class EnglishLyricsReader:
                          pause_ms: int = 500,
                          voice: str = "",
                          cn_voice: str = "",
-                         loop: bool = False):
+                         loop: bool = False,
+                         rate: str = "",
+                         volume: str = "",
+                         pitch: str = ""):
         """Background worker for reading lyrics line by line.
 
         All tkinter state (lines, mode, voice, etc.) must be captured on
@@ -806,6 +815,9 @@ class EnglishLyricsReader:
             voice: English voice name.
             cn_voice: Chinese voice name.
             loop: Whether to loop current line.
+            rate: Pre-captured rate string.
+            volume: Pre-captured volume string.
+            pitch: Pre-captured pitch string.
         """
         if stop_event is None:
             stop_event = self._stop_event
@@ -846,7 +858,8 @@ class EnglishLyricsReader:
             # Read English line
             if en_line.strip():
                 if not self._synthesize_and_play_line(
-                    en_line, voice, stop_event
+                    en_line, voice, stop_event,
+                    rate=rate, volume=volume, pitch=pitch,
                 ):
                     break
 
@@ -855,7 +868,8 @@ class EnglishLyricsReader:
                 if stop_event.is_set():
                     break
                 if not self._synthesize_and_play_line(
-                    cn_line, cn_voice, stop_event
+                    cn_line, cn_voice, stop_event,
+                    rate=rate, volume=volume, pitch=pitch,
                 ):
                     break
 
@@ -935,6 +949,9 @@ class EnglishLyricsReader:
         voice = self.voice_var.get()
         cn_voice = self.cn_voice_var.get()
         loop = self.loop_var.get()
+        rate = self._get_rate_str()
+        volume = self._get_volume_str()
+        pitch = self._get_pitch_str()
 
         self._stop_any_playback()
         # Create a NEW stop event for this session. The old thread (if still
@@ -950,7 +967,8 @@ class EnglishLyricsReader:
             target=self._reading_worker,
             args=(start_index, single_line, stop_event,
                   en_lines, cn_lines, mode, pause_ms,
-                  voice, cn_voice, loop),
+                  voice, cn_voice, loop,
+                  rate, volume, pitch),
             daemon=True
         )
         self.reading_thread.start()
@@ -1022,6 +1040,9 @@ class EnglishLyricsReader:
         voice = self.voice_var.get()
         mode = self.mode_var.get()
         cn_voice = self.cn_voice_var.get()
+        rate = self._get_rate_str()
+        volume = self._get_volume_str()
+        pitch = self._get_pitch_str()
 
         # Create a new stop event for this preview session
         stop_event = threading.Event()
@@ -1030,9 +1051,15 @@ class EnglishLyricsReader:
         self._set_reading_state(True)
 
         def _preview():
-            self._synthesize_and_play_line(en_line, voice, stop_event)
+            self._synthesize_and_play_line(
+                en_line, voice, stop_event,
+                rate=rate, volume=volume, pitch=pitch,
+            )
             if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
-                self._synthesize_and_play_line(cn_line, cn_voice, stop_event)
+                self._synthesize_and_play_line(
+                    cn_line, cn_voice, stop_event,
+                    rate=rate, volume=volume, pitch=pitch,
+                )
             self.is_reading = False
             self.root.after(0, lambda: self._set_reading_state(False))
             self.root.after(0, lambda: self._set_status("试听完成。"))
