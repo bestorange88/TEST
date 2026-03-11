@@ -10,7 +10,7 @@ setup(
     packages=find_packages(),
     python_requires=">=3.11",
     install_requires=[
-        "edge-tts>=6.1.0",
+        "edge-tts>=7.2.7",
         "pygame>=2.5.0",
     ],
     entry_points={
