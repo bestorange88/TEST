@@ -53,7 +53,7 @@ class EnglishLyricsReader:
         # State variables
         self.is_reading = False
         self.is_paused = False
-        self.should_stop = False
+        self._stop_event = threading.Event()
         self.current_line_index = 0
         self.reading_thread: Optional[threading.Thread] = None
         self.loop_current_line = False
@@ -684,11 +684,19 @@ class EnglishLyricsReader:
 
     # ─── Playback Operations ────────────────────────────────────────
 
-    def _play_audio_file(self, filepath: str):
-        """Play an audio file using pygame mixer."""
+    def _play_audio_file(self, filepath: str,
+                          stop_event: threading.Event = None):
+        """Play an audio file using pygame mixer.
+
+        Args:
+            filepath: Path to the audio file to play.
+            stop_event: Per-session Event; when set, playback stops.
+        """
         if not PYGAME_AVAILABLE:
             self._set_status("pygame not available for audio playback")
             return
+        if stop_event is None:
+            stop_event = self._stop_event
 
         try:
             pygame.mixer.music.load(filepath)
@@ -697,7 +705,7 @@ class EnglishLyricsReader:
             # Use a flag to track if we are in a paused state to avoid
             # exiting the loop when get_busy() returns False due to pause.
             while True:
-                if self.should_stop:
+                if stop_event.is_set():
                     pygame.mixer.music.stop()
                     return
                 if self.is_paused:
@@ -711,11 +719,21 @@ class EnglishLyricsReader:
             msg = f"Playback error: {err}"
             self.root.after(0, lambda m=msg: self._set_status(m))
 
-    def _synthesize_and_play_line(self, text: str, voice: str) -> bool:
-        """Synthesize a line and play it. Returns False if stopped."""
+    def _synthesize_and_play_line(self, text: str, voice: str,
+                                    stop_event: threading.Event = None
+                                    ) -> bool:
+        """Synthesize a line and play it. Returns False if stopped.
+
+        Args:
+            text: Text to synthesize.
+            voice: Voice name to use.
+            stop_event: Per-session Event; when set, synthesis/playback stops.
+        """
         if not text.strip():
             return True
-        if self.should_stop:
+        if stop_event is None:
+            stop_event = self._stop_event
+        if stop_event.is_set():
             return False
 
         try:
@@ -733,10 +751,10 @@ class EnglishLyricsReader:
                 pitch=self._get_pitch_str(),
             )
 
-            if self.should_stop:
+            if stop_event.is_set():
                 return False
 
-            self._play_audio_file(temp_file)
+            self._play_audio_file(temp_file, stop_event)
 
             # Clean up temp file
             try:
@@ -744,20 +762,25 @@ class EnglishLyricsReader:
             except OSError:
                 pass
 
-            return not self.should_stop
+            return not stop_event.is_set()
         except Exception as err:
             msg = f"TTS Error: {err}"
             self.root.after(0, lambda m=msg: self._set_status(m))
-            return not self.should_stop
+            return not stop_event.is_set()
 
     def _reading_worker(self, start_index: int = 0,
-                         single_line: bool = False):
+                         single_line: bool = False,
+                         stop_event: threading.Event = None):
         """Background worker for reading lyrics line by line.
 
         Args:
             start_index: The line index to start reading from.
             single_line: If True, only read the single line at start_index.
+            stop_event: Per-session Event; when set, reading stops.
         """
+        if stop_event is None:
+            stop_event = self._stop_event
+
         en_lines, cn_lines = self._get_aligned_lines()
         total = len(en_lines)
 
@@ -772,12 +795,12 @@ class EnglishLyricsReader:
         end_index = start_index + 1 if single_line else total
 
         i = start_index
-        while i < end_index and not self.should_stop:
+        while i < end_index and not stop_event.is_set():
             # Wait while paused
-            while self.is_paused and not self.should_stop:
+            while self.is_paused and not stop_event.is_set():
                 time.sleep(0.1)
 
-            if self.should_stop:
+            if stop_event.is_set():
                 break
 
             self.current_line_index = i
@@ -794,26 +817,30 @@ class EnglishLyricsReader:
             # Read English line
             if en_line.strip():
                 voice = self.voice_var.get()
-                if not self._synthesize_and_play_line(en_line, voice):
+                if not self._synthesize_and_play_line(
+                    en_line, voice, stop_event
+                ):
                     break
 
             # Read Chinese line if mode requires
             if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
-                if self.should_stop:
+                if stop_event.is_set():
                     break
                 cn_voice = self.cn_voice_var.get()
-                if not self._synthesize_and_play_line(cn_line, cn_voice):
+                if not self._synthesize_and_play_line(
+                    cn_line, cn_voice, stop_event
+                ):
                     break
 
             # Handle loop mode
             if self.loop_var.get():
                 # Stay on current line
-                if not self.should_stop:
+                if not stop_event.is_set():
                     time.sleep(pause_ms / 1000.0)
                 continue
 
             # Pause between lines
-            if not self.should_stop and i < end_index - 1:
+            if not stop_event.is_set() and i < end_index - 1:
                 time.sleep(pause_ms / 1000.0)
 
             i += 1
@@ -821,7 +848,7 @@ class EnglishLyricsReader:
         # Reading complete
         self.is_reading = False
         self.root.after(0, lambda: self._set_reading_state(False))
-        if not self.should_stop:
+        if not stop_event.is_set():
             self.root.after(0, lambda: self._set_status("Reading complete."))
             self.root.after(0, lambda: self.progress_var.set(100))
         else:
@@ -851,32 +878,40 @@ class EnglishLyricsReader:
         self._start_reading_from(start_idx)
 
     def _stop_any_playback(self):
-        """Stop any ongoing reading or preview before starting new playback."""
-        if self.is_reading or (self.reading_thread and self.reading_thread.is_alive()):
-            self.should_stop = True
-            self.is_paused = False
-            if PYGAME_AVAILABLE:
-                try:
-                    pygame.mixer.music.stop()
-                except Exception:
-                    pass
-            # Wait briefly for the thread to finish
-            if self.reading_thread and self.reading_thread.is_alive():
-                self.reading_thread.join(timeout=1.0)
-            self.is_reading = False
+        """Stop any ongoing reading or preview before starting new playback.
+
+        Sets the current session's stop event so the running thread will
+        terminate. Even if the thread outlives the join timeout, it holds
+        a reference to its own (now-set) event, so it will still stop
+        independently of any new session's event.
+        """
+        self._stop_event.set()
+        self.is_paused = False
+        if PYGAME_AVAILABLE:
+            try:
+                pygame.mixer.music.stop()
+            except Exception:
+                pass
+        if self.reading_thread and self.reading_thread.is_alive():
+            self.reading_thread.join(timeout=2.0)
+        self.is_reading = False
 
     def _start_reading_from(self, start_index: int,
                               single_line: bool = False):
         """Start reading from a specific line index."""
         self._stop_any_playback()
+        # Create a NEW stop event for this session. The old thread (if still
+        # alive) holds a reference to the previous (now-set) event, so it
+        # will see the stop signal regardless of this new event.
+        stop_event = threading.Event()
+        self._stop_event = stop_event
         self.is_reading = True
         self.is_paused = False
-        self.should_stop = False
         self._set_reading_state(True)
 
         self.reading_thread = threading.Thread(
             target=self._reading_worker,
-            args=(start_index, single_line),
+            args=(start_index, single_line, stop_event),
             daemon=True
         )
         self.reading_thread.start()
@@ -909,7 +944,7 @@ class EnglishLyricsReader:
 
     def stop_reading(self):
         """Stop the current reading."""
-        self.should_stop = True
+        self._stop_event.set()
         self.is_paused = False
         self.is_reading = False
         if PYGAME_AVAILABLE:
@@ -944,18 +979,19 @@ class EnglishLyricsReader:
         self._update_line_info(idx + 1, len(en_lines), en_line, cn_line)
         self._set_status(f"Previewing line {idx + 1}...")
 
-        # Mark as reading to prevent concurrent playback
+        # Create a new stop event for this preview session
+        stop_event = threading.Event()
+        self._stop_event = stop_event
         self.is_reading = True
-        self.should_stop = False
         self._set_reading_state(True)
 
         def _preview():
             voice = self.voice_var.get()
-            self._synthesize_and_play_line(en_line, voice)
+            self._synthesize_and_play_line(en_line, voice, stop_event)
             mode = self.mode_var.get()
             if mode == MODE_ENGLISH_THEN_CHINESE and cn_line.strip():
                 cn_voice = self.cn_voice_var.get()
-                self._synthesize_and_play_line(cn_line, cn_voice)
+                self._synthesize_and_play_line(cn_line, cn_voice, stop_event)
             self.is_reading = False
             self.root.after(0, lambda: self._set_reading_state(False))
             self.root.after(0, lambda: self._set_status("Preview complete."))
@@ -1124,7 +1160,7 @@ class EnglishLyricsReader:
 
     def cleanup(self):
         """Clean up resources on exit."""
-        self.should_stop = True
+        self._stop_event.set()
         if PYGAME_AVAILABLE:
             try:
                 pygame.mixer.quit()
